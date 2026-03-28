@@ -1,7 +1,39 @@
 
 services:
 ###> doctrine/doctrine-bundle ###
+  php:
+    build: .
+    container_name: symfony_php
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=dev
+    networks:
+      - symfony_network
+
+  # Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: symfony_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - symfony_network
+
   database:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-47fbaeb19dc8a9f21c7b81f74e60eec8}
     ports:
       - "5432"
+    networks:
+      - symfony_network
 ###< doctrine/doctrine-bundle ###
+
+networks:
+  symfony_network:
+    driver: bridge
