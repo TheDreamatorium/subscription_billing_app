@@ -29,7 +29,7 @@ services:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-47fbaeb19dc8a9f21c7b81f74e60eec8}
     ports:
-      - "5432"
+    - "5432:5432"
     networks:
       - symfony_network
 ###< doctrine/doctrine-bundle ###
