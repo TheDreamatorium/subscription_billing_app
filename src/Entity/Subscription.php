@@ -34,6 +34,10 @@ class Subscription
     #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'subscriptions')]
     private Collection $appUser;
 
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Plan $plan = null;
+
     public function __construct()
     {
         $this->appUser = new ArrayCollection();
@@ -100,6 +104,18 @@ class Subscription
     public function removeAppUser(User $appUser): static
     {
         $this->appUser->removeElement($appUser);
+
+        return $this;
+    }
+
+    public function getPlan(): ?Plan
+    {
+        return $this->plan;
+    }
+
+    public function setPlan(?Plan $plan): static
+    {
+        $this->plan = $plan;
 
         return $this;
     }
