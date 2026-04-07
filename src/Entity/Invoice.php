@@ -3,19 +3,25 @@
 namespace App\Entity;
 
 use App\Repository\InvoiceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Timestampable\Traits\TimestampableEntity;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 class Invoice
 {
+    use TimestampableEntity;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::GUID)]
-    private ?string $uuid = null;
+    private ?Uuid $uuid = null;
 
     #[ORM\Column(length: 255)]
     private ?string $invoiceNumber = null;
@@ -41,6 +47,24 @@ class Invoice
     #[ORM\Column]
     private ?\DateTimeImmutable $paidAt = null;
 
+    #[ORM\ManyToOne(inversedBy: 'invoices')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Subscription $subscription = null;
+
+    /**
+     * @var Collection<int, Payment>
+     */
+    #[ORM\OneToMany(targetEntity: Payment::class, mappedBy: 'invoice')]
+    private Collection $payments;
+
+    public function __construct()
+    {
+        $this->uuid = Uuid::v4();
+        $this->issuedAt = new \DateTimeImmutable();
+        $this->status = 'draft';
+        $this->payments = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -48,7 +72,7 @@ class Invoice
 
     public function getUuid(): ?string
     {
-        return $this->uuid;
+        return $this->uuid?->toRfc4122();
     }
 
     public function setUuid(string $uuid): static
@@ -150,6 +174,48 @@ class Invoice
     public function setPaidAt(\DateTimeImmutable $paidAt): static
     {
         $this->paidAt = $paidAt;
+
+        return $this;
+    }
+
+    public function getSubscription(): ?Subscription
+    {
+        return $this->subscription;
+    }
+
+    public function setSubscription(?Subscription $subscription): static
+    {
+        $this->subscription = $subscription;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Payment>
+     */
+    public function getPayments(): Collection
+    {
+        return $this->payments;
+    }
+
+    public function addPayment(Payment $payment): static
+    {
+        if (!$this->payments->contains($payment)) {
+            $this->payments->add($payment);
+            $payment->setInvoice($this);
+        }
+
+        return $this;
+    }
+
+    public function removePayment(Payment $payment): static
+    {
+        if ($this->payments->removeElement($payment)) {
+            // set the owning side to null (unless already changed)
+            if ($payment->getInvoice() === $this) {
+                $payment->setInvoice(null);
+            }
+        }
 
         return $this;
     }
